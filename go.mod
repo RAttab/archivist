@@ -1,4 +1,4 @@
-module main
+module github.com/RAttab/archivist
 
 go 1.14
 
