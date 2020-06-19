@@ -7,7 +7,7 @@ function renderRecords(records) {
             let html = [];
             let asset = "/asset/record/" + id;
 
-            html.push(`<a target="_blank" href="/record/`+id+`">`+
+            html.push(`<a href="/record/`+id+`">`+
                       `  <img src="/asset/record/`+id+`" alt="`+record.caption+`" width="600" height="400">`+
                       `</a>`);
             html.push(`<div class="tags">`);
