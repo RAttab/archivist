@@ -66,3 +66,9 @@ div.tag {
     display: inline-block;
 }
 
+img.fit-to-screen {
+    float: right;
+    margin: auto;
+    max-width: 100%;
+    heigth: auto;
+}

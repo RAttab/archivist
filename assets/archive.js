@@ -10,8 +10,8 @@ function renderRecords(records) {
             html.push(`<a href="/record/`+id+`">`+
                       `  <img src="/asset/record/`+id+`" alt="`+record.caption+`" width="600" height="400">`+
                       `</a>`);
-            html.push(`<div class="tags">`);
 
+            html.push(`<div class="tags">`);
             record.tags.forEach(function (tag, index) {
                 html.push(`<div class="tag">`);
                 html.push(`<a href="/tag/`+encodeURIComponent(tag)+`">`+tag+`</a>`);
