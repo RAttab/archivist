@@ -135,7 +135,7 @@ func jsonResponse(resp interface{}, writer http.ResponseWriter, req *http.Reques
 	writer.Write(bytes)
 }
 
-func assetRecord(writer http.ResponseWriter, req *http.Request) {
+func assetsRecord(writer http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		writer.WriteHeader(http.StatusMethodNotAllowed)
 		return
@@ -157,13 +157,19 @@ func assetRecord(writer http.ResponseWriter, req *http.Request) {
 	writer.WriteHeader(http.StatusFound)
 }
 
+func htmlTag(writer http.ResponseWriter, req *http.Request) {
+	http.ServeFile(writer, req, "./assets/tag.html")
+}
+
 func ApiInit() {
 	http.HandleFunc("/api/tags", apiTags)
 	http.HandleFunc("/api/tag/", apiTag)
 	http.HandleFunc("/api/records", apiRecords)
 	http.HandleFunc("/api/record/", apiRecord)
 	http.HandleFunc("/api/stats", apiStats)
-	http.HandleFunc("/asset/record/", assetRecord)
+	http.HandleFunc("/asset/record/", assetsRecord)
+	http.HandleFunc("/tag/", htmlTag)
+	http.Handle("/", http.FileServer(http.Dir("./assets")))
 
 	go func() {
 		err := http.ListenAndServe(Config.Bind, nil)
