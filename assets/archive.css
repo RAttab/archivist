@@ -67,7 +67,7 @@ div.tag {
 }
 
 img.fit-to-screen {
-    float: right;
+    float: left;
     margin: auto;
     max-width: 100%;
     heigth: auto;
