@@ -3,6 +3,8 @@
 Archivist is a Discord bot whose goal is to archive images posted on a given
 channel and make them available through a gallery.
 
+![Example](example.png)
+
 
 ## Design
 
