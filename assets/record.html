@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/archive.css">
+    <script src="/archive.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  </head>
+
+  <body>
+    <script>
+$.getJSON("/api" + new URL(document.URL).pathname, function (record) {
+    $("body").html(
+	`<img src="/asset/record/`+record.id+`">` +
+	`<a href="`+discordMessageUrl(record)+`">` +
+	`<img src="`+discordIconUrl()+`" width=25px, height=25px>` +
+	`</a>`);
+});
+    </script>
+  </body>
+</html>

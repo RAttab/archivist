@@ -13,6 +13,7 @@ var configPath = flag.String("config", "./archivist.json", "JSON config")
 var Config struct {
 	Token        string `json:"token"`
 	DatabasePath string `json:"db"`
+	Guild        string `json:"guild"`
 	Channel      string `json:"channel"`
 	Bind         string `json:"bind"`
 }
@@ -39,7 +40,7 @@ func main() {
 	DiscordConnect()
 	defer DiscordClose()
 
-	ScrapperStart(Config.Channel, DatabaseIt(Config.Channel))
+	ScrapperStart(Config.Guild, Config.Channel, DatabaseIt(Config.Channel))
 	defer ScrapperStop()
 
 	ApiInit()

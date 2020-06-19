@@ -12,8 +12,10 @@ type Stats struct {
 
 type Record struct {
 	Id        int64     `json:"id"`
-	MessageId string    `json:"msg"`
-	ImageId   string    `json:"img"`
+	GuildId   string    `json:"guild"`
+	ChannelId string    `json:"channel"`
+	MessageId string    `json:"message"`
+	ImageId   string    `json:"image"`
 	Time      time.Time `json:"time"`
 	Path      string    `json:"path"`
 	Caption   string    `json:"caption"`

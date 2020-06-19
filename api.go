@@ -161,6 +161,10 @@ func htmlTag(writer http.ResponseWriter, req *http.Request) {
 	http.ServeFile(writer, req, "./assets/tag.html")
 }
 
+func htmlRecord(writer http.ResponseWriter, req *http.Request) {
+	http.ServeFile(writer, req, "./assets/record.html")
+}
+
 func ApiInit() {
 	http.HandleFunc("/api/tags", apiTags)
 	http.HandleFunc("/api/tag/", apiTag)
@@ -169,6 +173,7 @@ func ApiInit() {
 	http.HandleFunc("/api/stats", apiStats)
 	http.HandleFunc("/asset/record/", assetsRecord)
 	http.HandleFunc("/tag/", htmlTag)
+	http.HandleFunc("/record/", htmlRecord)
 	http.Handle("/", http.FileServer(http.Dir("./assets")))
 
 	go func() {

@@ -17,6 +17,8 @@ var (
 var schema = []string{`
 create table records (
     id integer not null primary key autoincrement,
+    guild_id text not null,
+    chan_id text not null,
     msg_id text not null,
     img_id text not null,
     time datetime not null,
@@ -108,8 +110,19 @@ func DatabaseRecordInsert(rec *Record) int64 {
 	tx, err := db.Begin()
 	check(err, "begin")
 
-	const queryRecs = "insert into records(msg_id, img_id, time, path, caption) values(?, ?, ?, ?, ?);"
-	result, err := tx.Exec(queryRecs, rec.MessageId, rec.ImageId, rec.Time, rec.Path, rec.Caption)
+	log.Printf("DBG insert: %v", rec)
+
+	const queryRecs = "insert into records(guild_id, chan_id, msg_id, img_id, time, path, caption)" +
+		"  values(?, ?, ?, ?, ?, ?, ?);"
+	result, err := tx.Exec(
+		queryRecs,
+		rec.GuildId,
+		rec.ChannelId,
+		rec.MessageId,
+		rec.ImageId,
+		rec.Time,
+		rec.Path,
+		rec.Caption)
 	check(err, queryRecs)
 
 	id, err := result.LastInsertId()
@@ -135,7 +148,8 @@ func DatabaseRecord(id int64) *Record {
 	rec := &Record{}
 
 	{
-		const query = "select id, msg_id, img_id, time, path, caption from records where id = ?;"
+		const query = "select id, guild_id, chan_id, msg_id, img_id, time, path, caption" +
+			"  from records where id = ?;"
 		rows, err := tx.Query(query, id)
 		defer rows.Close()
 		check(err, query)
@@ -144,7 +158,15 @@ func DatabaseRecord(id int64) *Record {
 			return nil
 		}
 
-		check(rows.Scan(&rec.Id, &rec.MessageId, &rec.ImageId, &rec.Time, &rec.Path, &rec.Caption), query)
+		check(rows.Scan(
+			&rec.Id,
+			&rec.GuildId,
+			&rec.ChannelId,
+			&rec.MessageId,
+			&rec.ImageId,
+			&rec.Time,
+			&rec.Path,
+			&rec.Caption), query)
 	}
 
 	{

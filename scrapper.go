@@ -10,8 +10,8 @@ const sleep = 1 * time.Second
 
 var pipe chan chan bool = make(chan chan bool)
 
-func ScrapperStart(channel, since string) {
-	go scrape(channel, since)
+func ScrapperStart(guild, channel, since string) {
+	go scrape(guild, channel, since)
 }
 
 func ScrapperStop() {
@@ -37,7 +37,7 @@ func validAttachment(attach *Attachment) bool {
 		strings.HasSuffix(file, ".gif")
 }
 
-func message(msg *Message) error {
+func message(guild string, msg *Message) error {
 	log.Printf("DBG: message id=%v, id=%v, content=%v", msg.ID, msg.Author.Username, msg.Content)
 
 	ts, err := DiscordTimestamp(msg.ID)
@@ -52,7 +52,15 @@ func message(msg *Message) error {
 			continue
 		}
 
+		log.Printf("DBG guild: %v", msg.GuildID)
+
+		if msg.GuildID != "" {
+			guild = msg.GuildID
+		}
+
 		art := &Record{
+			GuildId:   guild,
+			ChannelId: msg.ChannelID,
 			MessageId: msg.ID,
 			ImageId:   attach.ID,
 			Time:      ts,
@@ -68,7 +76,7 @@ func message(msg *Message) error {
 	return nil
 }
 
-func scrape(channel, since string) {
+func scrape(guild, channel, since string) {
 	it, err := DiscordMessageIterator(channel, since)
 	if err != nil {
 		log.Fatalf("unable to create iterator for '%v': %v", channel, it)
@@ -88,7 +96,7 @@ func scrape(channel, since string) {
 			continue
 		}
 
-		if err := message(msg); err != nil {
+		if err := message(guild, msg); err != nil {
 			log.Printf("ERROR: failed to parse '%v': %v", msg.ID, err)
 		}
 
