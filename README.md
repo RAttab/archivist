@@ -47,13 +47,15 @@ https://discord.com/api/oauth2/authorize?client_id=722589504569081939&scope=bot&
 ## Todo list
 
 - Find someone that actually knows how to Web. UX is not my forte.
-- Dockerization, Hosting, CI, DNS, SSL... ya know, details...
+- ~Dockerization, Hosting, CI, DNS, SSL... ya know, details...~
 - All that paranoid security stuff required to "trust" humans for write ops
 - Extend DB search options in API
-- Support more then one discord channel
+- ~Support more then one discord channel~
 - Actual testing; I once wrote a bug. Never again.
-- Backfill Scrapper to prime the DB. Makes it less boring.
+- ~Backfill Scrapper to prime the DB. Makes it less boring.~
 - Versioned database schema and migration mechanism
 - Automatic tagging system.
 - That thing where you write what things do and that nobody ever reads.
+- Support for discord gateway for live sub and unsub
+- Segment api per guild
 - Probably lots more that I'm forgetting
