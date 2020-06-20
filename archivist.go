@@ -16,6 +16,9 @@ var Config struct {
 	Guild        string `json:"guild"`
 	Channel      string `json:"channel"`
 	Bind         string `json:"bind"`
+	AssetPath    string `json:"assets"`
+	CertFile     string `json:"cert"`
+	KeyFile      string `json:"key"`
 }
 
 func ConfigLoad() {

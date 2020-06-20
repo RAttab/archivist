@@ -158,11 +158,15 @@ func assetsRecord(writer http.ResponseWriter, req *http.Request) {
 }
 
 func htmlTag(writer http.ResponseWriter, req *http.Request) {
-	http.ServeFile(writer, req, "./assets/tag.html")
+	http.ServeFile(writer, req, Config.AssetPath+"/tag.html")
 }
 
 func htmlRecord(writer http.ResponseWriter, req *http.Request) {
-	http.ServeFile(writer, req, "./assets/record.html")
+	http.ServeFile(writer, req, Config.AssetPath+"/record.html")
+}
+
+func redirectTLS(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://thearchivist.xyz:443"+r.RequestURI, http.StatusMovedPermanently)
 }
 
 func ApiInit() {
@@ -174,10 +178,24 @@ func ApiInit() {
 	http.HandleFunc("/asset/record/", assetsRecord)
 	http.HandleFunc("/tag/", htmlTag)
 	http.HandleFunc("/record/", htmlRecord)
-	http.Handle("/", http.FileServer(http.Dir("./assets")))
+	http.Handle("/", http.FileServer(http.Dir(Config.AssetPath)))
 
-	go func() {
-		err := http.ListenAndServe(Config.Bind, nil)
-		log.Fatalf("ERROR: http server exited with: %v", err)
-	}()
+	if Config.CertFile != "" || Config.KeyFile != "" {
+		go func() {
+			if err := http.ListenAndServeTLS(Config.Bind, Config.CertFile, Config.KeyFile, nil); err != nil {
+				log.Fatalf("ERROR ListenAndServeTLS error: %v", err)
+			}
+		}()
+		go func() {
+			if err := http.ListenAndServe(":80", http.HandlerFunc(redirectTLS)); err != nil {
+				log.Fatalf("ERROR ListenAndServe error: %v", err)
+			}
+		}()
+	} else {
+		go func() {
+			if err := http.ListenAndServe(Config.Bind, nil); err != nil {
+				log.Fatalf("ERROR ListenAndServe error: %v", err)
+			}
+		}()
+	}
 }
