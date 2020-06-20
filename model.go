@@ -5,9 +5,10 @@ import (
 )
 
 type Stats struct {
-	RecordsRows  int64 `json:"records_rows"`
-	TagsRows     int64 `json:"tags_rows"`
-	TagsDistinct int64 `json:"tags_distinct"`
+	RecordsRows  int64            `json:"records_rows"`
+	TagsRows     int64            `json:"tags_rows"`
+	TagsDistinct int64            `json:"tags_distinct"`
+	Tags         map[string]int64 `json:"tags"`
 }
 
 type Record struct {

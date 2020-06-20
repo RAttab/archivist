@@ -123,26 +123,39 @@ func DatabaseRecordInsert(rec *Record) int64 {
 	tx, err := db.Begin()
 	check(err, "begin")
 
-	const queryRecs = "insert into records(guild_id, chan_id, msg_id, img_id, time, path, caption)" +
-		"  values(?, ?, ?, ?, ?, ?, ?) on conflict do nothing;"
-	result, err := tx.Exec(
-		queryRecs,
-		rec.GuildId,
-		rec.ChannelId,
-		rec.MessageId,
-		rec.ImageId,
-		rec.Time,
-		rec.Path,
-		rec.Caption)
-	check(err, queryRecs)
+	{
+		const query = "insert into records(guild_id, chan_id, msg_id, img_id, time, path, caption)" +
+			"  values(?, ?, ?, ?, ?, ?, ?) on conflict do nothing;"
+		_, err := tx.Exec(
+			query,
+			rec.GuildId,
+			rec.ChannelId,
+			rec.MessageId,
+			rec.ImageId,
+			rec.Time,
+			rec.Path,
+			rec.Caption)
+		check(err, query)
+	}
 
-	id, err := result.LastInsertId()
-	check(err, "last insert id")
+	// result.LastInsertId() is unreliable in the case of an upsert so can't use it.
+	var id int64
+	{
+		const query = "select id from records where img_id = ?;"
+		rows, err := tx.Query(query, rec.ImageId)
 
-	const queryTag = "insert into tags(record_id, tag) values(?, ?) on conflict do nothing;"
-	for _, tag := range rec.Tags {
-		_, err := tx.Exec(queryTag, id, tag)
-		check(err, queryTag)
+		if !rows.Next() {
+			Fatal("unable to get id of upserted record '%v': %v", rec.ImageId, err)
+		}
+		check(rows.Scan(&id), query)
+	}
+
+	{
+		const query = "insert into tags(record_id, tag) values(?, ?) on conflict do nothing;"
+		for _, tag := range rec.Tags {
+			_, err := tx.Exec(query, id, tag)
+			check(err, query)
+		}
 	}
 
 	check(tx.Commit(), "commit")
@@ -300,9 +313,8 @@ func DatabaseStats() *Stats {
 		defer rows.Close()
 		check(err, query)
 
-		for rows.Next() {
-			check(rows.Scan(&stats.RecordsRows), query)
-		}
+		rows.Next()
+		check(rows.Scan(&stats.RecordsRows), query)
 	}
 
 	{
@@ -311,9 +323,8 @@ func DatabaseStats() *Stats {
 		defer rows.Close()
 		check(err, query)
 
-		for rows.Next() {
-			check(rows.Scan(&stats.TagsRows), query)
-		}
+		rows.Next()
+		check(rows.Scan(&stats.TagsRows), query)
 	}
 
 	{
@@ -322,8 +333,22 @@ func DatabaseStats() *Stats {
 		defer rows.Close()
 		check(err, query)
 
+		rows.Next()
+		check(rows.Scan(&stats.TagsDistinct), query)
+	}
+
+	{
+		const query = "select tag, count(record_id) from tags group by tag;"
+		rows, err := db.Query(query)
+		defer rows.Close()
+		check(err, query)
+
+		stats.Tags = make(map[string]int64)
 		for rows.Next() {
-			check(rows.Scan(&stats.TagsDistinct), query)
+			var tag string
+			var count int64
+			check(rows.Scan(&tag, &count), query)
+			stats.Tags[tag] = count
 		}
 	}
 
