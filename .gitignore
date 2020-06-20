@@ -13,6 +13,7 @@
 
 # developer token
 archivist
+*.tar
 *.token
 *.json
 *.sqlite*

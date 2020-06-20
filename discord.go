@@ -15,7 +15,7 @@ type Attachment discordgo.MessageAttachment
 
 func DiscordConnect() {
 	var err error
-	if discord, err = discordgo.New("Bot " + Config.Token); err != nil {
+	if discord, err = discordgo.New("Bot " + Config.Discord.Token); err != nil {
 		log.Fatalf("unable to connect to discord: %v", err)
 	}
 }

@@ -11,14 +11,23 @@ import (
 
 var configPath = flag.String("config", "./archivist.json", "JSON config")
 var Config struct {
-	Token        string `json:"token"`
-	DatabasePath string `json:"db"`
-	Guild        string `json:"guild"`
-	Channel      string `json:"channel"`
-	Bind         string `json:"bind"`
-	AssetPath    string `json:"assets"`
-	CertFile     string `json:"cert"`
-	KeyFile      string `json:"key"`
+	Database string `json:"db"`
+
+	Discord struct {
+		Token   string `json:"token"`
+		Guild   string `json:"guild"`
+		Channel string `json:"channel"`
+	} `json:"discord"`
+
+	Http struct {
+		Assets string `json:"assets"`
+
+		Bind    string `json:"bind"`
+		BindTls string `json:"bind_tls"`
+
+		TlsCert string `json:"tls_cert"`
+		TlsKey  string `json:"tls_key"`
+	} `json:"http"`
 }
 
 func ConfigLoad() {
@@ -32,18 +41,22 @@ func ConfigLoad() {
 	if err := json.Unmarshal(data, &Config); err != nil {
 		log.Fatalf("unable to parse config '%v': %v", *configPath, err)
 	}
+
+	if env, ok := os.LookupEnv("DISCORD_TOKEN"); ok {
+		Config.Discord.Token = env
+	}
 }
 
 func main() {
 	ConfigLoad()
 
-	DatabaseOpen(Config.DatabasePath)
+	DatabaseOpen(Config.Database)
 	defer DatabaseClose()
 
 	DiscordConnect()
 	defer DiscordClose()
 
-	ScrapperStart(Config.Guild, Config.Channel, DatabaseIt(Config.Channel))
+	ScrapperStart(Config.Discord.Guild, Config.Discord.Channel, DatabaseIt(Config.Discord.Channel))
 	defer ScrapperStop()
 
 	ApiInit()

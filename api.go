@@ -153,20 +153,23 @@ func assetsRecord(writer http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	writer.Header().Add("Location", record.Path)
-	writer.WriteHeader(http.StatusFound)
+	http.Redirect(writer, req, record.Path, http.StatusFound)
 }
 
 func htmlTag(writer http.ResponseWriter, req *http.Request) {
-	http.ServeFile(writer, req, Config.AssetPath+"/tag.html")
+	http.ServeFile(writer, req, asset("tag.html"))
 }
 
 func htmlRecord(writer http.ResponseWriter, req *http.Request) {
-	http.ServeFile(writer, req, Config.AssetPath+"/record.html")
+	http.ServeFile(writer, req, asset("record.html"))
 }
 
 func redirectTLS(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "https://thearchivist.xyz:443"+r.RequestURI, http.StatusMovedPermanently)
+}
+
+func asset(path string) string {
+	return Config.Http.Assets + "/" + path
 }
 
 func ApiInit() {
@@ -178,22 +181,23 @@ func ApiInit() {
 	http.HandleFunc("/asset/record/", assetsRecord)
 	http.HandleFunc("/tag/", htmlTag)
 	http.HandleFunc("/record/", htmlRecord)
-	http.Handle("/", http.FileServer(http.Dir(Config.AssetPath)))
+	http.Handle("/", http.FileServer(http.Dir(asset(""))))
 
-	if Config.CertFile != "" || Config.KeyFile != "" {
+	if Config.Http.BindTls != "" {
 		go func() {
-			if err := http.ListenAndServeTLS(Config.Bind, Config.CertFile, Config.KeyFile, nil); err != nil {
+			err := http.ListenAndServeTLS(Config.Http.BindTls, Config.Http.TlsCert, Config.Http.TlsKey, nil)
+			if err != nil {
 				log.Fatalf("ERROR ListenAndServeTLS error: %v", err)
 			}
 		}()
 		go func() {
-			if err := http.ListenAndServe(":80", http.HandlerFunc(redirectTLS)); err != nil {
+			if err := http.ListenAndServe(Config.Http.Bind, http.HandlerFunc(redirectTLS)); err != nil {
 				log.Fatalf("ERROR ListenAndServe error: %v", err)
 			}
 		}()
 	} else {
 		go func() {
-			if err := http.ListenAndServe(Config.Bind, nil); err != nil {
+			if err := http.ListenAndServe(Config.Http.Bind, nil); err != nil {
 				log.Fatalf("ERROR ListenAndServe error: %v", err)
 			}
 		}()
