@@ -14,9 +14,8 @@ var Config struct {
 	Database string `json:"db"`
 
 	Discord struct {
-		Token   string `json:"token"`
-		Guild   string `json:"guild"`
-		Channel string `json:"channel"`
+		Token string              `json:"token"`
+		Subs  map[string][]string `json:"subs"`
 	} `json:"discord"`
 
 	Http struct {
@@ -35,11 +34,11 @@ func ConfigLoad() {
 
 	data, err := ioutil.ReadFile(*configPath)
 	if err != nil {
-		log.Fatalf("unable to read config '%v': %v", *configPath, err)
+		Fatal("unable to read config '%v': %v", *configPath, err)
 	}
 
 	if err := json.Unmarshal(data, &Config); err != nil {
-		log.Fatalf("unable to parse config '%v': %v", *configPath, err)
+		Fatal("unable to parse config '%v': %v", *configPath, err)
 	}
 
 	if env, ok := os.LookupEnv("DISCORD_TOKEN"); ok {
@@ -56,13 +55,31 @@ func main() {
 	DiscordConnect()
 	defer DiscordClose()
 
-	ScrapperStart(Config.Discord.Guild, Config.Discord.Channel, DatabaseIt(Config.Discord.Channel))
+	ScrapperStart()
 	defer ScrapperStop()
 
 	ApiInit()
 
-	log.Printf("started...")
+	Info("Started")
 	notif := make(chan os.Signal, 1)
 	signal.Notify(notif, os.Interrupt)
 	<-notif
+
+	Info("Exiting")
+}
+
+func Fatal(fmt string, args ...interface{}) {
+	log.Fatalf("<FATAL> "+fmt, args...)
+}
+
+func Warning(fmt string, args ...interface{}) {
+	log.Printf("<WARN> "+fmt, args...)
+}
+
+func Info(fmt string, args ...interface{}) {
+	log.Printf("<INFO> "+fmt, args...)
+}
+
+func Debug(fmt string, args ...interface{}) {
+	log.Printf("<DEBUG> "+fmt, args...)
 }

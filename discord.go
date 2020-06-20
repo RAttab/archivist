@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"sort"
 	"time"
 
@@ -16,48 +15,72 @@ type Attachment discordgo.MessageAttachment
 func DiscordConnect() {
 	var err error
 	if discord, err = discordgo.New("Bot " + Config.Discord.Token); err != nil {
-		log.Fatalf("unable to connect to discord: %v", err)
+		Fatal("unable to connect to discord: %v", err)
 	}
 }
 
 func DiscordClose() {
 	if err := discord.Close(); err != nil {
-		log.Printf("unable to close discord connection: %v", err)
+		Warning("unable to close discord connection: %v", err)
 	}
+}
+
+const (
+	forward   = iota
+	backwards = iota
+)
+
+type MessageSorter struct {
+	msgs      []*discordgo.Message
+	direction int
+}
+
+func (sorter MessageSorter) Len() int {
+	return len(sorter.msgs)
+}
+
+func (sorter MessageSorter) Less(lhs, rhs int) bool {
+	if sorter.direction == forward {
+		return sorter.msgs[lhs].ID < sorter.msgs[rhs].ID
+	} else {
+		return sorter.msgs[rhs].ID < sorter.msgs[lhs].ID
+	}
+}
+
+func (sorter MessageSorter) Swap(lhs, rhs int) {
+	tmp := sorter.msgs[lhs]
+	sorter.msgs[lhs] = sorter.msgs[rhs]
+	sorter.msgs[rhs] = tmp
 }
 
 type MessageIt struct {
 	Channel string
 	Pos     string
 
-	pending []*discordgo.Message
-	index   int
+	pending   []*discordgo.Message
+	index     int
+	direction int
 }
 
-type MessageSorter []*discordgo.Message
-
-func (sorter MessageSorter) Len() int {
-	return len(sorter)
-}
-
-func (sorter MessageSorter) Less(lhs, rhs int) bool {
-	return sorter[lhs].ID < sorter[rhs].ID
-}
-
-func (sorter MessageSorter) Swap(lhs, rhs int) {
-	tmp := sorter[lhs]
-	sorter[lhs] = sorter[rhs]
-	sorter[rhs] = tmp
-}
-
-func (it *MessageIt) DiscordIteratorNext() (*Message, error) {
+func (it *MessageIt) DiscordItNext() (*Message, error) {
 	if it.index == len(it.pending) {
 		var err error
-		if it.pending, err = discord.ChannelMessages(it.Channel, 100, "", it.Pos, ""); err != nil {
+
+		before := ""
+		if it.direction == backwards {
+			before = it.Pos
+		}
+
+		after := ""
+		if it.direction == forward {
+			after = it.Pos
+		}
+
+		if it.pending, err = discord.ChannelMessages(it.Channel, 100, before, after, ""); err != nil {
 			return nil, err
 		}
 		it.index = 0
-		sort.Sort(MessageSorter(it.pending))
+		sort.Sort(MessageSorter{it.pending, it.direction})
 	}
 
 	if len(it.pending) == 0 {
@@ -71,8 +94,12 @@ func (it *MessageIt) DiscordIteratorNext() (*Message, error) {
 	return (*Message)(msg), nil
 }
 
-func DiscordMessageIterator(channel string, since string) (*MessageIt, error) {
-	return &MessageIt{Channel: channel, Pos: since}, nil
+func DiscordMessageForwardIt(channel string, from string) (*MessageIt, error) {
+	return &MessageIt{Channel: channel, Pos: from, direction: forward}, nil
+}
+
+func DiscordMessageBackwardsIt(channel string, from string) (*MessageIt, error) {
+	return &MessageIt{Channel: channel, Pos: from, direction: backwards}, nil
 }
 
 func DiscordTimestamp(id string) (time.Time, error) {

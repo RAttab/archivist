@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"log"
 	"os"
 	"sync"
 
@@ -27,6 +26,10 @@ create table records (
 );`, `
 create unique index index_records_img on records(img_id);
 `, `
+create unique index index_records_msg on records(msg_id);
+`, `
+create index index_records_time on records(time);
+`, `
 create table tags(
     record_id integer not null references records(id),
     tag text not null,
@@ -36,15 +39,16 @@ create index index_tags_record on tags(record_id);
 `, `
 create index index_tags_tag on tags(tag);
 `, `
-create table iterators (
+create table subs (
     chan_id text not null primary key,
-    msg_id text not null
+    earliest_msg_id text not null,
+    latest_msg_id text not null
 );`,
 }
 
 func check(err error, query string) {
 	if err != nil {
-		log.Fatalf("unable to query '%v': %v", query, err)
+		Fatal("unable to query '%v': %v", query, err)
 	}
 }
 
@@ -57,13 +61,13 @@ func DatabaseOpen(file string) {
 	var err error
 	db, err = sql.Open("sqlite3", "file:"+file+"?mode=rwc")
 	if err != nil {
-		log.Fatalf("unable to open '%v': %v", file, err)
+		Fatal("unable to open '%v': %v", file, err)
 	}
 
 	if init {
 		for _, query := range schema {
 			if _, err := db.Exec(query); err != nil {
-				log.Fatalf("unable to initialize db '%v': %v\n%v", file, err, query)
+				Fatal("unable to initialize db '%v': %v\n%v", file, err, query)
 			}
 		}
 	}
@@ -73,33 +77,42 @@ func DatabaseClose() {
 	db.Close()
 }
 
-func DatabaseIt(channel string) string {
+func DatabaseSub(channel string) (string, string) {
 	lock.RLock()
 	defer lock.RUnlock()
 
-	const query = "select msg_id from iterators where chan_id = ?;"
+	const query = "select earliest_msg_id, latest_msg_id from subs where chan_id = ?;"
 	rows, err := db.Query(query, channel)
 	defer rows.Close()
 	check(err, query)
 
 	if !rows.Next() {
-		return ""
+		const query = "insert into subs (chan_id, earliest_msg_id, latest_msg_id) values (?, \"\", \"\");"
+		_, err := db.Exec(query, channel)
+		check(err, query)
+		return "", ""
 	}
 
-	var msg string
-	check(rows.Scan(&msg), query)
-
-	return msg
+	var earliest, latest string
+	check(rows.Scan(&earliest, &latest), query)
+	return earliest, latest
 }
 
-func DatabaseItSet(channel, pos string) {
+func DatabaseSubUpdateLatest(channel, pos string) {
 	lock.Lock()
 	defer lock.Unlock()
 
-	const query = "insert into iterators (chan_id, msg_id) values(?, ?)" +
-		"  on conflict(chan_id) do update set msg_id = ?;"
+	const query = "update subs set latest_msg_id = ? where chan_id = ?;"
+	_, err := db.Exec(query, channel, pos)
+	check(err, query)
+}
 
-	_, err := db.Exec(query, channel, pos, pos)
+func DatabaseSubUpdateEarliest(channel, pos string) {
+	lock.Lock()
+	defer lock.Unlock()
+
+	const query = "update subs set earliest_msg_id = ? where chan_id = ?;"
+	_, err := db.Exec(query, channel, pos)
 	check(err, query)
 }
 
@@ -109,8 +122,6 @@ func DatabaseRecordInsert(rec *Record) int64 {
 
 	tx, err := db.Begin()
 	check(err, "begin")
-
-	log.Printf("DBG insert: %v", rec)
 
 	const queryRecs = "insert into records(guild_id, chan_id, msg_id, img_id, time, path, caption)" +
 		"  values(?, ?, ?, ?, ?, ?, ?);"
