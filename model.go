@@ -21,7 +21,3 @@ type Record struct {
 	Caption   string    `json:"caption"`
 	Tags      []string  `json:"tags"`
 }
-
-func TagsAuthor(author string) string {
-	return "author: " + author
-}

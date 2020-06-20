@@ -26,7 +26,7 @@ create table records (
 );`, `
 create unique index index_records_img on records(img_id);
 `, `
-create unique index index_records_msg on records(msg_id);
+create index index_records_msg on records(msg_id);
 `, `
 create index index_records_time on records(time);
 `, `
@@ -124,7 +124,7 @@ func DatabaseRecordInsert(rec *Record) int64 {
 	check(err, "begin")
 
 	const queryRecs = "insert into records(guild_id, chan_id, msg_id, img_id, time, path, caption)" +
-		"  values(?, ?, ?, ?, ?, ?, ?);"
+		"  values(?, ?, ?, ?, ?, ?, ?) on conflict do nothing;"
 	result, err := tx.Exec(
 		queryRecs,
 		rec.GuildId,
@@ -139,7 +139,7 @@ func DatabaseRecordInsert(rec *Record) int64 {
 	id, err := result.LastInsertId()
 	check(err, "last insert id")
 
-	const queryTag = "insert into tags(record_id, tag) values(?, ?);"
+	const queryTag = "insert into tags(record_id, tag) values(?, ?) on conflict do nothing;"
 	for _, tag := range rec.Tags {
 		_, err := tx.Exec(queryTag, id, tag)
 		check(err, queryTag)

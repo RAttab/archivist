@@ -36,6 +36,14 @@ The binary for the bot is comprised of:
   because I want to keep things extra simple.
 
 
+## Installing
+
+This is the Discord grant URL for the bot:
+
+```
+https://discord.com/api/oauth2/authorize?client_id=722589504569081939&scope=bot&permissions=66560
+```
+
 ## Todo list
 
 - Find someone that actually knows how to Web. UX is not my forte.

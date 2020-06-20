@@ -13,6 +13,7 @@ func ScrapperStart() {
 	for guild, channels := range Config.Discord.Subs {
 		for _, channel := range channels {
 			earliest, latest := DatabaseSub(channel)
+			Info("scrape guild:%v chan:%v fwd:%v back:%v", guild, channel, latest, earliest)
 			go scrapeForward(guild, channel, latest)
 			go scrapeBackwards(guild, channel, earliest)
 		}
@@ -38,12 +39,14 @@ func bail() bool {
 func validAttachment(attach *Attachment) bool {
 	file := attach.Filename
 	return strings.HasSuffix(file, ".jpg") ||
+		strings.HasSuffix(file, ".jpeg") ||
 		strings.HasSuffix(file, ".png") ||
 		strings.HasSuffix(file, ".gif")
 }
 
 func message(guild string, msg *Message) (bool, error) {
 	kept := false
+	// Debug("filter guild:%v chan:%v msg:%v", guild, msg.ChannelID, msg.ID)
 
 	ts, err := DiscordTimestamp(msg.ID)
 	if err != nil {
@@ -67,14 +70,14 @@ func message(guild string, msg *Message) (bool, error) {
 			Time:      ts,
 			Path:      attach.URL,
 			Caption:   msg.Content,
-			Tags:      []string{TagsAuthor(msg.Author.Username)},
+			Tags:      []string{"@" + msg.Author.Username},
 		}
 
 		id := DatabaseRecordInsert(rec)
-		Info("PUT: %v -> guild=%v, chan=%v, msg=%v",
-			id, rec.GuildId, rec.ChannelId, rec.MessageId)
-
 		kept = true
+
+		Info("put %v -> guild:%v chan:%v msg:%v img:%v",
+			id, rec.GuildId, rec.ChannelId, rec.MessageId, rec.ImageId)
 	}
 
 	return kept, nil
