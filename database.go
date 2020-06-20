@@ -162,7 +162,7 @@ func DatabaseRecordInsert(rec *Record) int64 {
 	return id
 }
 
-func DatabaseRecord(id int64) *Record {
+func DatabaseRecord(guild string, id int64) *Record {
 	lock.RLock()
 	defer lock.RUnlock()
 
@@ -173,8 +173,8 @@ func DatabaseRecord(id int64) *Record {
 
 	{
 		const query = "select id, guild_id, chan_id, msg_id, img_id, time, path, caption" +
-			"  from records where id = ?;"
-		rows, err := tx.Query(query, id)
+			"  from records where id = ? and guild_id = ?;"
+		rows, err := tx.Query(query, id, guild)
 		defer rows.Close()
 		check(err, query)
 
@@ -210,12 +210,14 @@ func DatabaseRecord(id int64) *Record {
 	return rec
 }
 
-func DatabaseRecords(limit int64) []int64 {
+func DatabaseRecords(guild string, limit int64) []int64 {
 	lock.RLock()
 	defer lock.RUnlock()
 
-	const query = "select id from records order by time desc limit ?;"
-	rows, err := db.Query(query, limit)
+	Debug("records guild:%v limit:%v", guild, limit)
+
+	const query = "select id from records where guild_id = ? order by time desc limit ?;"
+	rows, err := db.Query(query, guild, limit)
 	defer rows.Close()
 	check(err, query)
 
@@ -229,14 +231,14 @@ func DatabaseRecords(limit int64) []int64 {
 	return ids
 }
 
-func DatabaseTag(tag string) []int64 {
+func DatabaseTag(guild, tag string) []int64 {
 	lock.RLock()
 	defer lock.RUnlock()
 
 	const query = "select record_id from tags, records" +
-		"  where tags.record_id = records.id and tag = ?" +
+		"  where tag = ? and tags.record_id = records.id and records.guild_id = ?" +
 		"  order by records.time desc;"
-	rows, err := db.Query(query, tag)
+	rows, err := db.Query(query, tag, guild)
 	defer rows.Close()
 	check(err, query)
 
@@ -250,12 +252,14 @@ func DatabaseTag(tag string) []int64 {
 	return ids
 }
 
-func DatabaseTags() []string {
+func DatabaseTags(guild string) []string {
 	lock.RLock()
 	defer lock.RUnlock()
 
-	const query = "select distinct tag from tags order by tag asc;"
-	rows, err := db.Query(query)
+	const query = "select distinct tag from tags, records" +
+		"  where tags.record_id = records.id and records.guild_id = ?" +
+		"  order by tag asc;"
+	rows, err := db.Query(query, guild)
 	defer rows.Close()
 	check(err, query)
 

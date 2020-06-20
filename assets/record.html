@@ -8,18 +8,19 @@
 
   <body>
     <script>
-$.getJSON("/api" + new URL(document.URL).pathname, function (record) {
+$.getJSON(archive.apiFromPage(), function (record) {
     let html = [];
 
-    html.push(`<img class="fit-to-screen" src="/asset/record/`+record.id+`">`);
-    html.push(`<a href="`+discordMessageUrl(record)+`">`+
-	      `<img src="`+discordIconUrl()+`" width=25px, height=25px>`+
+    html.push(`<img class="fit-to-screen" src="`+archive.asset(record.id)+`">`);
+    html.push(`<a href="`+archive.discordMessageUrl(record)+`">`+
+	      `<img src="`+archive.discordIconUrl()+`" width=25px, height=25px>`+
 	      `</a>`);
 
     html.push(`<div class="tags">`);
     record.tags.forEach(function (tag, index) {
+        urlTag = encodeURIComponent(tag)
         html.push(`<div class="tag">`);
-        html.push(`<a href="/tag/`+encodeURIComponent(tag)+`">`+tag+`</a>`);
+        html.push(`<a href="`+archive.page("tag", urlTag)+`">`+tag+`</a>`);
         html.push(`</div>`);
     });
     html.push(`</div>`);
