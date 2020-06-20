@@ -6,8 +6,8 @@ import (
 
 type Stats struct {
 	RecordsRows  int64 `json:"records_rows"`
-	TagsRows     int64 `json:"tags_rowss"`
-	TagsDistinct int64 `json:"tag_distinct"`
+	TagsRows     int64 `json:"tags_rows"`
+	TagsDistinct int64 `json:"tags_distinct"`
 }
 
 type Record struct {

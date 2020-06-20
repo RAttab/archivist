@@ -105,3 +105,11 @@ func DiscordMessageBackwardsIt(channel string, from string) (*MessageIt, error) 
 func DiscordTimestamp(id string) (time.Time, error) {
 	return discordgo.SnowflakeTimestamp(id)
 }
+
+func DiscordChannelName(id string) string {
+	channel, err := discord.Channel(id)
+	if err != nil {
+		Fatal("unable to fetch channel name for '%v': %v", id, err)
+	}
+	return channel.Name
+}

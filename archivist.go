@@ -56,8 +56,6 @@ func main() {
 	defer DiscordClose()
 
 	ScrapperStart()
-	defer ScrapperStop()
-
 	ApiInit()
 
 	Info("Started")

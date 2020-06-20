@@ -103,7 +103,7 @@ func DatabaseSubUpdateLatest(channel, pos string) {
 	defer lock.Unlock()
 
 	const query = "update subs set latest_msg_id = ? where chan_id = ?;"
-	_, err := db.Exec(query, channel, pos)
+	_, err := db.Exec(query, pos, channel)
 	check(err, query)
 }
 
@@ -112,7 +112,7 @@ func DatabaseSubUpdateEarliest(channel, pos string) {
 	defer lock.Unlock()
 
 	const query = "update subs set earliest_msg_id = ? where chan_id = ?;"
-	_, err := db.Exec(query, channel, pos)
+	_, err := db.Exec(query, pos, channel)
 	check(err, query)
 }
 
@@ -181,7 +181,7 @@ func DatabaseRecord(id int64) *Record {
 	}
 
 	{
-		const query = "select tag from tags where record_id = ?;"
+		const query = "select tag from tags where record_id = ? order by tag asc;"
 		rows, err := tx.Query(query, rec.Id)
 		defer rows.Close()
 		check(err, query)
@@ -201,7 +201,7 @@ func DatabaseRecords(limit int64) []int64 {
 	lock.RLock()
 	defer lock.RUnlock()
 
-	const query = "select id from records order by id desc limit ?;"
+	const query = "select id from records order by time desc limit ?;"
 	rows, err := db.Query(query, limit)
 	defer rows.Close()
 	check(err, query)
@@ -220,7 +220,9 @@ func DatabaseTag(tag string) []int64 {
 	lock.RLock()
 	defer lock.RUnlock()
 
-	const query = "select record_id from tags where tag = ?;"
+	const query = "select record_id from tags, records" +
+		"  where tags.record_id = records.id and tag = ?" +
+		"  order by records.time desc;"
 	rows, err := db.Query(query, tag)
 	defer rows.Close()
 	check(err, query)
@@ -239,7 +241,7 @@ func DatabaseTags() []string {
 	lock.RLock()
 	defer lock.RUnlock()
 
-	const query = "select distinct tag from tags;"
+	const query = "select distinct tag from tags order by tag asc;"
 	rows, err := db.Query(query)
 	defer rows.Close()
 	check(err, query)

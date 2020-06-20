@@ -7,32 +7,16 @@ import (
 
 const sleep = 1 * time.Second
 
-var pipe chan chan bool = make(chan chan bool)
-
 func ScrapperStart() {
 	for guild, channels := range Config.Discord.Subs {
-		for _, channel := range channels {
-			earliest, latest := DatabaseSub(channel)
-			Info("scrape guild:%v chan:%v fwd:%v back:%v", guild, channel, latest, earliest)
-			go scrapeForward(guild, channel, latest)
-			go scrapeBackwards(guild, channel, earliest)
+		for _, channelId := range channels {
+			earliest, latest := DatabaseSub(channelId)
+			Info("scrape guild:%v chan:%v fwd:%v back:%v", guild, channelId, latest, earliest)
+
+			channelName := DiscordChannelName(channelId)
+			go scrapeForward(guild, channelId, channelName, latest)
+			go scrapeBackwards(guild, channelId, channelName, earliest)
 		}
-	}
-}
-
-func ScrapperStop() {
-	wait := make(chan bool)
-	pipe <- wait
-	<-wait
-}
-
-func bail() bool {
-	select {
-	case done := <-pipe:
-		done <- true
-		return true
-	default:
-		return false
 	}
 }
 
@@ -44,7 +28,7 @@ func validAttachment(attach *Attachment) bool {
 		strings.HasSuffix(file, ".gif")
 }
 
-func message(guild string, msg *Message) (bool, error) {
+func message(guild, channelName string, msg *Message) (bool, error) {
 	kept := false
 	// Debug("filter guild:%v chan:%v msg:%v", guild, msg.ChannelID, msg.ID)
 
@@ -70,7 +54,7 @@ func message(guild string, msg *Message) (bool, error) {
 			Time:      ts,
 			Path:      attach.URL,
 			Caption:   msg.Content,
-			Tags:      []string{"@" + msg.Author.Username},
+			Tags:      []string{"@" + msg.Author.Username, "#" + channelName},
 		}
 
 		id := DatabaseRecordInsert(rec)
@@ -83,64 +67,56 @@ func message(guild string, msg *Message) (bool, error) {
 	return kept, nil
 }
 
-func scrapeForward(guild, channel, from string) {
-	it, err := DiscordMessageForwardIt(channel, from)
+func scrapeForward(guild, channelId, channelName, from string) {
+	it, err := DiscordMessageForwardIt(channelId, from)
 	if err != nil {
-		Fatal("unable to create iterator for '%v': %v", channel, it)
+		Fatal("unable to create iterator for '%v': %v", channelId, it)
 	}
 
 	for true {
-		if bail() {
-			break
-		}
-
 		msg, err := it.DiscordItNext()
 		if err != nil {
-			Fatal("unable to read message for '%v': %v", channel, err)
+			Fatal("unable to read message for '%v': %v", channelId, err)
 		}
 		if msg == nil {
 			time.Sleep(sleep)
 			continue
 		}
 
-		if _, err := message(guild, msg); err != nil {
+		if _, err := message(guild, channelName, msg); err != nil {
 			Fatal("ERROR: failed to parse '%v': %v", msg.ID, err)
 		}
 
-		DatabaseSubUpdateLatest(channel, msg.ID)
+		DatabaseSubUpdateLatest(channelId, msg.ID)
 	}
 }
 
-func scrapeBackwards(guild, channel, from string) {
-	it, err := DiscordMessageBackwardsIt(channel, from)
+func scrapeBackwards(guild, channelId, channelName, from string) {
+	it, err := DiscordMessageBackwardsIt(channelId, from)
 	if err != nil {
-		Fatal("unable to create iterator for '%v': %v", channel, it)
+		Fatal("unable to create iterator for '%v': %v", channelId, it)
 	}
 
 	count := 0
 	for true {
-		if bail() {
-			break
-		}
-
 		msg, err := it.DiscordItNext()
 		if msg == nil {
 			break
 		} else if err != nil {
-			Fatal("unable to read message for '%v': %v", channel, err)
+			Fatal("unable to read message for '%v': %v", channelId, err)
 			return
 		}
 
-		if kept, err := message(guild, msg); err != nil {
+		if kept, err := message(guild, channelName, msg); err != nil {
 			Warning("failed to parse '%v': %v", msg.ID, err)
 		} else if kept {
 			count++
 		}
 
-		DatabaseSubUpdateEarliest(channel, msg.ID)
+		DatabaseSubUpdateEarliest(channelId, msg.ID)
 	}
 
 	if from != it.Pos {
-		Info("backfilled %v messages for '%v'", count, channel)
+		Info("backfilled %v messages for '%v'", count, channelId)
 	}
 }
