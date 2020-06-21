@@ -41,6 +41,7 @@ type Query struct {
 	GuildId string
 	Tag     string
 	From    QueryId
+	Since   QueryId
 	Limit   int64
 }
 
@@ -123,13 +124,19 @@ func NewQuery(url *url.URL) (bool, Query) {
 		return false, Query{}
 	}
 
+	if ok, id := query.parseId(qs.Get("since")); ok {
+		query.From = id
+	} else {
+		return false, Query{}
+	}
+
 	if ok, limit := query.parseInt(qs.Get("limit")); ok && limit > 0 {
 		query.Limit = limit
 	} else {
 		query.Limit = 20
 	}
 
-	if ok, tag := query.parseTag(qs.Get("tags")); ok {
+	if ok, tag := query.parseTag(qs.Get("tag")); ok {
 		query.Tag = tag
 	} else {
 		return false, Query{}
@@ -139,6 +146,9 @@ func NewQuery(url *url.URL) (bool, Query) {
 }
 
 func (query Query) HasFrom() bool {
+	return query.From.IsSet()
+}
+func (query Query) HasSince() bool {
 	return query.From.IsSet()
 }
 

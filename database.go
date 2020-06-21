@@ -375,17 +375,26 @@ func DatabaseQuery(params Query) []int64 {
 	query += " and records.guild_id = ?"
 	args = append(args, params.GuildId)
 
-	if params.HasFrom() {
-		query += " and records." + params.From.Column + " > ?"
-		args = append(args, params.From.Id)
-	}
-
 	if params.HasTag() {
 		query += " and tags.tag = ?"
 		args = append(args, params.Tag)
 	}
 
-	query += " order by records.time asc limit ?;"
+	if params.HasFrom() {
+		query += " and records." + params.From.Column + " < ?"
+		args = append(args, params.From.Id)
+	} else if params.HasSince() {
+		query += " and records." + params.Since.Column + " > ?"
+		args = append(args, params.Since.Id)
+	}
+
+	if params.HasFrom() {
+		query += " order by records.time asc"
+	} else {
+		query += " order by records.time desc"
+	}
+
+	query += " limit ?;"
 	args = append(args, params.Limit)
 
 	rows, err := db.Query(query, args...)
