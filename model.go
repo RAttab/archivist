@@ -123,10 +123,10 @@ func NewQuery(url *url.URL) (bool, Query) {
 		return false, Query{}
 	}
 
-	if ok, limit := query.parseInt(qs.Get("limit")); ok {
+	if ok, limit := query.parseInt(qs.Get("limit")); ok && limit > 0 {
 		query.Limit = limit
 	} else {
-		return false, Query{}
+		query.Limit = 20
 	}
 
 	if ok, tag := query.parseTag(qs.Get("tags")); ok {
@@ -141,9 +141,7 @@ func NewQuery(url *url.URL) (bool, Query) {
 func (query Query) HasFrom() bool {
 	return query.From.IsSet()
 }
-func (query Query) HasLimit() bool {
-	return query.Limit > 0
-}
+
 func (query Query) HasTag() bool {
 	return query.Tag != ""
 }

@@ -363,14 +363,13 @@ func DatabaseQuery(params Query) []int64 {
 	lock.Lock()
 	defer lock.Unlock()
 
-	query := ""
+	query := "select id"
 	args := []interface{}{}
 
 	if params.HasTag() {
-		query = "select tags.record_id from tags, records" +
-			"  where tags.record_id = records.id"
+		query += " from records, tags where records.id = tags.record_id"
 	} else {
-		query = "select tags.id from records where true"
+		query += " from records where true"
 	}
 
 	query += " and records.guild_id = ?"
@@ -386,12 +385,8 @@ func DatabaseQuery(params Query) []int64 {
 		args = append(args, params.Tag)
 	}
 
-	query += " order by asc records.img_id"
-
-	if params.HasLimit() {
-		query += "limit ?"
-		args = append(args, params.Limit)
-	}
+	query += " order by records.time asc limit ?;"
+	args = append(args, params.Limit)
 
 	rows, err := db.Query(query, args...)
 	defer rows.Close()

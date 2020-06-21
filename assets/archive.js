@@ -1,62 +1,108 @@
 var archive = {
+    path: {
+        api: {
+            query: function () {
+                let url = new URL(document.URL);
+                let guild = url.pathname.split("/")[2];
+                return "/api/query/"+guild+url.search;
+            },
+            record: function (record) {
+                let url = new URL(document.URL);
+                let guild = url.pathname.split("/")[2];
+                return "/api/record/"+guild+"/"+record;
+            }
+        },
 
-    guild: function () {
-        return new URL(document.URL).pathname.split("/")[2]
+        asset: {
+            record: function (record) {
+                let url = new URL(document.URL);
+                let guild = url.pathname.split("/")[2];
+                return "/asset/record/"+guild+"/"+record;
+            }
+        },
+
+        page: {
+            record: function (record) {
+                let url = new URL(document.URL);
+                let guild = url.pathname.split("/")[2];
+                return "/record/"+guild+"/"+record;
+            },
+            gallery: function () {
+                let url = new URL(document.URL);
+                let guild = url.pathname.split("/")[2];
+                return "/gallery/"+guild;
+            }
+        },
+
+        discord: {
+            icon: function () {
+                // https://discord.com/branding
+                return "https://discord.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg";
+            },
+            msg: function (record) {
+                return "https://discord.com/channels/" + record.guild + "/" + record.channel + "/" + record.message;
+            }
+
+        }
     },
 
-    page: function (op, id) {
-        return "/" + op + "/" + archive.guild() + "/" + id;
+    data: {
+        tags: new Set()
     },
 
-    api: function (op, id) {
-        return "/api/" + op + "/" + archive.guild() + "/" + id;
-    },
+    gallery: function () {
 
-    apiFromPage: function () {
-        return "/api" + new URL(document.URL).pathname
-    },
+        //TODO: Breaks the layout if I put it directly in the html page. Need to figure out why.
+        let html = []
+        html.push(`<div class="container">`);
+        html.push(`<div class="sidebar"><div class="tags" /></div>`);
+        html.push(`<div class="gallery"><div class="records" /></div>`);
+        html.push(`</div>`);
+        $("body").html(html.join(""));
 
-    asset: function (id) {
-        return "/asset/record/" + archive.guild() + "/" + id
+        $.getJSON(archive.path.api.query(), archive.renderRecords);
     },
 
     renderRecords: function (records) {
-        records.forEach(function (id, index) {
-            let body = $("body");
-            body.append(`<div id="`+id+`"class="gallery"></div>`);
-
-            $.getJSON(archive.api("record", id), function(record) {
-                let html = [];
-
-                html.push(`<a href="`+archive.page("record", id)+`">`+
-                          `  <img src="`+archive.asset(id)+`" alt="`+record.caption+`" width="600" height="400">`+
-                          `</a>`);
-
-                html.push(`<div class="tags">`);
-                record.tags.forEach(function (tag, index) {
-                    urlTag = encodeURIComponent(tag)
-                    html.push(`<div class="tag">`);
-                    html.push(`<a href="`+archive.page("tag", urlTag)+`">`+tag+`</a>`);
-                    html.push(`</div>`);
-                });
-                html.push(`</div>`);
-
-                let limit = 90;
-                let caption = record.caption;
-                if (caption.length > limit) { caption = caption.substring(0, limit)+"..." };
-                html.push(`<div class="desc">`+caption+`</div>`);
-
-                $("div#"+record.id).html(html.join(""));
-            })
-        });
+        for (let record of records) {
+            $("div.records").append(`<div id="`+record+`" class="record" />`);
+            $.getJSON(archive.path.api.record(record), archive.renderRecord);
+        };
     },
 
-    // https://discord.com/branding
-    discordIconUrl: function () {
-        return "https://discord.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg";
+    renderRecord: function (record) {
+        archive.renderTags(record.tags)
+        archive.cursor = "img:"+record.img_id
+
+        let html = [];
+        html.push(`<a href="`+archive.path.page.record(record.id)+`">`);
+        html.push(`<img src="`+archive.path.asset.record(record.id)+`">`);
+        html.push(`</a>`);
+        $("div#"+record.id).html(html.join(""));
     },
 
-    discordMessageUrl: function (record) {
-        return "https://discord.com/channels/" + record.guild + "/" + record.channel + "/" + record.message;
+    renderTags: function (tags) {
+        let update = false;
+        for (let tag of tags) {
+            if (!archive.data.tags.has(tag)) {
+                archive.data.tags.add(tag);
+                update = true;
+            }
+        }
+        if (!update) return;
+        
+        let html = []
+        for (let tag of Array.from(archive.data.tags.keys()).sort()) {
+            html.push(archive.renderTag(tag));
+        }
+        $("div.tags").html(html.join(""));
+    },
+
+    renderTag: function (tag) {
+        let html = []
+        html.push(`<div class="tag">`)
+        html.push(`<a href="`+archive.path.page.gallery()+`?tag=`+encodeURIComponent(tag)+`">`+tag+`</a>`)
+        html.push(`</div>`)
+        return html.join("")
     }
 }
