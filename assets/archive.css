@@ -14,13 +14,6 @@ body {
     color: #daddd6;
 }
 
-h1 {
-    font-size: 20px;
-    font-weight: bold;
-    margin-bottom: 5px;
-    margin-top: 10px;
-}
-
 a, a:visited, a:active {
     color: #79acd2;
     text-decoration: none;
@@ -30,25 +23,29 @@ a:hover {
     color: #e67b7b;
 }
 
-body, .container, .sidebar, .gallery {
+body, #container, #sidebar, #gallery {
     height: 100%;
 }
 
-.container {
+#container {
     display: flex;
 }
 
-.sidebar {
+#sidebar {
     float: left;
     width: 200px;
 }
 
-.gallery, .view {
+#sidebar .sidebar {
+    margin-bottom: 20px;
+}
+
+#gallery, #view {
     float: right;
     flex: 1;
 }
 
-.gallery div.record {
+#gallery div.record {
     float: left;
 
     height: 200px;
@@ -57,7 +54,7 @@ body, .container, .sidebar, .gallery {
     margin: 10px;
 }
 
-.gallery div.record img {
+#gallery div.record img {
     max-height: 200px;
     max-width: 200px;
 
@@ -67,14 +64,18 @@ body, .container, .sidebar, .gallery {
     box-shadow: 3px 5px 8px rgba(0, 0, 0, 0.7);
 }
 
-.view div.image img {
-    display: block;
+#view div#image img {
+    max-width: 98%;
 
     margin: 10px;
     box-shadow: 3px 5px 8px rgba(0, 0, 0, 0.7);
 }
 
-.view .discord img {
+#view div#caption {
+    margin: 10px;
+}
+
+#discord img {
     float: left;
     height: 25px;
     width: 25px;

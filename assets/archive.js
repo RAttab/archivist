@@ -35,30 +35,43 @@ var archive = {
         tags: new Set()
     },
 
+    nav: function() {
+        let html = [];
+        html.push(`<a href="`+archive.path.page.gallery()+`">Top</a>`);
+        $("#nav").html(html.join(""));
+    },
+
     record: function () {
         $.getJSON(archive.path.api.record(archive.url.record), function (record) {
             archive.renderTags(record.tags)
 
-            let html = [];
+            {
+                let html = [];
 
-            html.push(`<div class="image">`);
-            html.push(`  <a href="`+archive.path.asset.record(record.id)+`">`);
-            html.push(`    <img src="`+archive.path.asset.record(record.id)+`">`);
-            html.push(`  </a>`);
-            html.push(`</div>`);
+                if (record.caption !== "") {
+                    html.push(`<div id="caption">`+record.caption+`</div>`);
+                }
 
-            if (record.caption !== "") {
-                html.push(`<div class="caption">`+record.caption+`</div>`);
+                html.push(`<div id="image">`);
+                html.push(`  <a href="`+archive.path.asset.record(record.id)+`">`);
+                html.push(`    <img src="`+archive.path.asset.record(record.id)+`">`);
+                html.push(`  </a>`);
+                html.push(`</div>`);
+
+                $("#view").html(html.join(""));
             }
 
-            html.push(`<div class="discord">`);
-            html.push(`  <a href="`+archive.path.discord.record(record)+`">`);
-            html.push(`    <img src="`+archive.path.discord.icon()+`">`);
-            html.push(`    Open in discord`);
-            html.push(`  </a>`);
-            html.push(`</div>`);
+            {
+                let html = [];
+                html.push(`<div id="discord" class="sidebar">`);
+                html.push(`  <a href="`+archive.path.discord.record(record)+`">`);
+                html.push(`    <img src="`+archive.path.discord.icon()+`">`);
+                html.push(`    Open in discord`);
+                html.push(`  </a>`);
+                html.push(`</div>`);
+                $("#sidebar").append(html.join(""));
+            }
 
-            $(".view").html(html.join(""));
         });
     },
 
@@ -68,7 +81,7 @@ var archive = {
 
     renderRecords: function (records) {
         for (let record of records) {
-            $("div.records").append(`<div id="`+record+`" class="record" />`);
+            $("div#records").append(`<div id="`+record+`" class="record" />`);
             $.getJSON(archive.path.api.record(record), archive.renderRecord);
         };
     },
@@ -98,7 +111,7 @@ var archive = {
         for (let tag of Array.from(archive.data.tags.keys()).sort()) {
             html.push(archive.renderTag(tag));
         }
-        $("div.tags").html(html.join(""));
+        $("div#tags").html(html.join(""));
     },
 
     renderTag: function (tag) {
