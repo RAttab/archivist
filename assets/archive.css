@@ -12,12 +12,12 @@ body, .container, .sidebar, .gallery {
     width: 200px;
 }
 
-.gallery {
+.gallery, .view {
     float: right;
     flex: 1;
 }
 
-div.record {
+.gallery div.record {
     float: left;
 
     height: 200px;
@@ -26,7 +26,7 @@ div.record {
     margin: 10px;
 }
 
-div.record img {
+.gallery div.record img {
     max-height: 200px;
     max-width: 200px;
 
@@ -34,4 +34,18 @@ div.record img {
     margin: auto;
 
     box-shadow: 3px 5px 8px rgba(0, 0, 0, 0.7);
+}
+
+.view div.image img {
+    display: block;
+
+    margin: 10px;
+    box-shadow: 3px 5px 8px rgba(0, 0, 0, 0.7);
+}
+
+.view .discord img {
+    float: left;
+    height: 25px;
+    width: 25px;
+
 }

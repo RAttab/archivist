@@ -1,37 +1,23 @@
 var archive = {
+    url: {
+        qs:     new URL(document.URL).search,
+        guild:  new URL(document.URL).pathname.split("/")[2],
+        record: new URL(document.URL).pathname.split("/")[3]
+    },
+
     path: {
         api: {
-            query: function () {
-                let url = new URL(document.URL);
-                let guild = url.pathname.split("/")[2];
-                return "/api/query/"+guild+url.search;
-            },
-            record: function (record) {
-                let url = new URL(document.URL);
-                let guild = url.pathname.split("/")[2];
-                return "/api/record/"+guild+"/"+record;
-            }
-        },
-
-        asset: {
-            record: function (record) {
-                let url = new URL(document.URL);
-                let guild = url.pathname.split("/")[2];
-                return "/asset/record/"+guild+"/"+record;
-            }
+            query:  function ()   { return "/api/query/" + archive.url.guild + archive.url.qs; },
+            record: function (id) { return "/api/record/" + archive.url.guild + "/" + id; }
         },
 
         page: {
-            record: function (record) {
-                let url = new URL(document.URL);
-                let guild = url.pathname.split("/")[2];
-                return "/record/"+guild+"/"+record;
-            },
-            gallery: function () {
-                let url = new URL(document.URL);
-                let guild = url.pathname.split("/")[2];
-                return "/gallery/"+guild;
-            }
+            gallery: function ()   { return "/gallery/" + archive.url.guild; },
+            record:  function (id) { return "/record/"+ archive.url.guild + "/" + id; }
+        },
+
+        asset: {
+            record: function (id) { return "/asset/record/" + archive.url.guild + "/" + id; }
         },
 
         discord: {
@@ -39,10 +25,9 @@ var archive = {
                 // https://discord.com/branding
                 return "https://discord.com/assets/f8389ca1a741a115313bede9ac02e2c0.svg";
             },
-            msg: function (record) {
+            record: function (record) {
                 return "https://discord.com/channels/" + record.guild + "/" + record.channel + "/" + record.message;
             }
-
         }
     },
 
@@ -50,16 +35,34 @@ var archive = {
         tags: new Set()
     },
 
+    record: function () {
+        $.getJSON(archive.path.api.record(archive.url.record), function (record) {
+            archive.renderTags(record.tags)
+
+            let html = [];
+
+            html.push(`<div class="image">`);
+            html.push(`  <a href="`+archive.path.asset.record(record.id)+`">`);
+            html.push(`    <img src="`+archive.path.asset.record(record.id)+`">`);
+            html.push(`  </a>`);
+            html.push(`</div>`);
+
+            if (record.caption !== "") {
+                html.push(`<div class="caption">`+record.caption+`</div>`);
+            }
+
+            html.push(`<div class="discord">`);
+            html.push(`  <a href="`+archive.path.discord.record(record)+`">`);
+            html.push(`    <img src="`+archive.path.discord.icon()+`">`);
+            html.push(`    Open in discord`);
+            html.push(`  </a>`);
+            html.push(`</div>`);
+
+            $(".view").html(html.join(""));
+        });
+    },
+
     gallery: function () {
-
-        //TODO: Breaks the layout if I put it directly in the html page. Need to figure out why.
-        let html = []
-        html.push(`<div class="container">`);
-        html.push(`<div class="sidebar"><div class="tags" /></div>`);
-        html.push(`<div class="gallery"><div class="records" /></div>`);
-        html.push(`</div>`);
-        $("body").html(html.join(""));
-
         $.getJSON(archive.path.api.query(), archive.renderRecords);
     },
 
@@ -76,7 +79,7 @@ var archive = {
 
         let html = [];
         html.push(`<a href="`+archive.path.page.record(record.id)+`">`);
-        html.push(`<img src="`+archive.path.asset.record(record.id)+`">`);
+        html.push(`  <img src="`+archive.path.asset.record(record.id)+`">`);
         html.push(`</a>`);
         $("div#"+record.id).html(html.join(""));
     },
@@ -90,7 +93,7 @@ var archive = {
             }
         }
         if (!update) return;
-        
+
         let html = []
         for (let tag of Array.from(archive.data.tags.keys()).sort()) {
             html.push(archive.renderTag(tag));
@@ -101,7 +104,7 @@ var archive = {
     renderTag: function (tag) {
         let html = []
         html.push(`<div class="tag">`)
-        html.push(`<a href="`+archive.path.page.gallery()+`?tag=`+encodeURIComponent(tag)+`">`+tag+`</a>`)
+        html.push(`  <a href="`+archive.path.page.gallery()+`?tag=`+encodeURIComponent(tag)+`">`+tag+`</a>`)
         html.push(`</div>`)
         return html.join("")
     }

@@ -77,6 +77,7 @@ func ApiInit() {
 	http.HandleFunc("/asset/record/", wrap(assetsRecord))
 
 	http.HandleFunc("/gallery/", wrap(htmlFile))
+	http.HandleFunc("/record/", wrap(htmlFile))
 	http.Handle("/", http.FileServer(http.Dir(asset(""))))
 
 	if Config.Http.BindTls != "" {
