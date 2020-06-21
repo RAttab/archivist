@@ -358,3 +358,51 @@ func DatabaseStats() *Stats {
 
 	return stats
 }
+
+func DatabaseQuery(params Query) []int64 {
+	lock.Lock()
+	defer lock.Unlock()
+
+	query := ""
+	args := []interface{}{}
+
+	if params.HasTag() {
+		query = "select tags.record_id from tags, records" +
+			"  where tags.record_id = records.id"
+	} else {
+		query = "select tags.id from records where true"
+	}
+
+	query += " and records.guild_id = ?"
+	args = append(args, params.GuildId)
+
+	if params.HasFrom() {
+		query += " and records." + params.From.Column + " > ?"
+		args = append(args, params.From.Id)
+	}
+
+	if params.HasTag() {
+		query += " and tags.tag = ?"
+		args = append(args, params.Tag)
+	}
+
+	query += " order by asc records.img_id"
+
+	if params.HasLimit() {
+		query += "limit ?"
+		args = append(args, params.Limit)
+	}
+
+	rows, err := db.Query(query, args...)
+	defer rows.Close()
+	check(err, query)
+
+	ids := []int64{}
+	for rows.Next() {
+		var id int64
+		check(rows.Scan(&id), query)
+		ids = append(ids, id)
+	}
+
+	return ids
+}
